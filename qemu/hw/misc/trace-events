@@ -1,0 +1,2 @@
+vgpu_thermal_mmio_read_unknown(uint64_t addr) "addr:%#" PRIx64
+vgpu_thermal_mmio_write_unknown(uint64_t addr, uint32_t val) "addr:%#" PRIx64 " val:%u"
