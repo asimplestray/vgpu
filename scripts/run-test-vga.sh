@@ -2,7 +2,8 @@
 # Script to run QEMU with an emulated GPU and VGA output
 set -e
 
-QEMU_BIN="/home/strayfoda/vgpu/qemu/build/qemu-system-x86_64"
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+QEMU_BIN="$PROJECT_DIR/qemu/build/qemu-system-x86_64"
 ISO="$1"
 RAM="${2:-2G}"
 GPU_DEV="${3:-nvidia-gt730}"

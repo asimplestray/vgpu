@@ -56,9 +56,6 @@ system_ss.add(when: 'CONFIG_INTEL_CORE', if_true: files('intel/intel_core.c'))
 # Intel — individual GPU models
 system_ss.add(when: 'CONFIG_INTEL_XE2', if_true: files('intel/xe2/xe2.c'))
 
-# Legacy GT730 stub (kept for backward compatibility; superseded by NV_GK208)
-system_ss.add(when: 'CONFIG_GT730', if_true: files('gt730.c'))
-
 system_ss.add(when: 'CONFIG_EXYNOS4', if_true: files('exynos4210_fimd.c'))
 system_ss.add(when: 'CONFIG_FRAMEBUFFER', if_true: files('framebuffer.c'))
 

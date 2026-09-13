@@ -35,10 +35,8 @@
  * ---------------------------------------------------------------------- */
 #define NV_PTIMER_INTR_0        0x009100
 #define NV_PTIMER_INTR_EN_0     0x009140
-#define NV_PTIMER_NUM_0         0x009400  /* Numerator                          */
-#define NV_PTIMER_DEN_0         0x009410  /* Denominator                        */
-#define NV_PTIMER_TIME_0        0x009410  /* Current time (low 32 bits)         */
-#define NV_PTIMER_TIME_1        0x009408  /* Current time (high 5 bits)         */
+#define NV_PTIMER_TIME_0        0x009400  /* Current time (low 32 bits)         */
+#define NV_PTIMER_TIME_1        0x009410  /* Current time (high bits)           */
 
 /* -------------------------------------------------------------------------
  * PBUS — PCI/PCIe Bus Interface

@@ -10,8 +10,15 @@
 
 #include "vgpu_core.h"
 #include "migration/vmstate.h"
-#include "../amd/amd_core.h"
 #include "qemu/timer.h"
+
+/* DCE CRTC0 offsets (duplicated here to keep the core vendor-neutral;
+ * canonical definitions live in amd/amd_core.h) */
+#define VGPU_DCE_CRTC0_CONTROL  0x01B0AC
+#define VGPU_DCE_CRTC0_H_TOTAL  0x06500
+#define VGPU_DCE_CRTC0_V_TOTAL  0x06510
+#define VGPU_DCE_CRTC0_OFFSET   0x06520
+#define VGPU_DCE_CRTC0_PITCH    0x06524
 
 /* -------------------------------------------------------------------------
  * Generic MMIO read
@@ -99,12 +106,9 @@ static void vgpu_display_update(void *opaque)
 {
     VGPUState *s = opaque;
     if (!s->con || !s->enable_display) {
-        qemu_log("VGPU DISPLAY: con=%p enable_display=%d - returning\n", s->con, s->enable_display);
         return;
     }
-    
-    qemu_log("VGPU DISPLAY: callback called for device_id=0x%04x\n", s->ops->device_id);
-    
+
     /* Re-arm timer for next frame (60 Hz) */
     if (s->display_timer) {
         timer_mod(s->display_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + (1000000000 / 60));
@@ -125,16 +129,11 @@ static void vgpu_display_update(void *opaque)
     /* Polaris/GFX8 (RX 480/580) dynamic screen rendering */
     if (s->ops->device_id == 0x67DF || s->ops->device_id == 0x67EF || s->ops->device_id == 0x67FF) {
         /* DCE CRTC timing registers */
-        uint32_t h_total = s->mmio_data[AMD_DCE_CRTC0_H_TOTAL >> 2];
-        uint32_t v_total = s->mmio_data[AMD_DCE_CRTC0_V_TOTAL >> 2];
-        uint32_t h_sync = s->mmio_data[AMD_DCE_CRTC0_H_SYNC_A >> 2];
-        uint32_t v_sync = s->mmio_data[AMD_DCE_CRTC0_V_SYNC_A >> 2];
-        uint32_t crtc_ctrl = s->mmio_data[AMD_DCE_CRTC0_CONTROL >> 2];
-        uint32_t pitch_val = s->mmio_data[AMD_DCE_CRTC0_PITCH >> 2];
-        uint32_t offset_val = s->mmio_data[AMD_DCE_CRTC0_OFFSET >> 2];
-        
-        qemu_log("POLARIS DISPLAY: h_total=0x%08x v_total=0x%08x h_sync=0x%08x v_sync=0x%08x crtc_ctrl=0x%08x pitch=%u offset=%u\n",
-                 h_total, v_total, h_sync, v_sync, crtc_ctrl, pitch_val, offset_val);
+        uint32_t h_total = s->mmio_data[VGPU_DCE_CRTC0_H_TOTAL >> 2];
+        uint32_t v_total = s->mmio_data[VGPU_DCE_CRTC0_V_TOTAL >> 2];
+        uint32_t crtc_ctrl = s->mmio_data[VGPU_DCE_CRTC0_CONTROL >> 2];
+        uint32_t pitch_val = s->mmio_data[VGPU_DCE_CRTC0_PITCH >> 2];
+        uint32_t offset_val = s->mmio_data[VGPU_DCE_CRTC0_OFFSET >> 2];
 
         /* Extract active display size from timing registers */
         width = h_total & 0xFFFF;
@@ -146,13 +145,11 @@ static void vgpu_display_update(void *opaque)
     }
 
     if (has_mode) {
-        qemu_log("POLARIS DISPLAY MODE: width=%u height=%u pitch=%u offset=%u\n", width, height, pitch, offset);
         DisplaySurface *surface = qemu_console_surface(s->con);
         if (surface) {
             if (surface_width(surface) != (int)width || surface_height(surface) != (int)height) {
                 surface = qemu_create_displaysurface(width, height);
                 if (!surface) {
-                    qemu_log("POLARIS DISPLAY: Failed to create surface %ux%u\n", width, height);
                     has_mode = false;
                 } else {
                     dpy_gfx_replace_surface(s->con, surface);
@@ -230,12 +227,10 @@ void vgpu_common_realize(PCIDevice *pdev, Error **errp)
     /* Configure PCI Interrupt Pin A */
     pci_config_set_interrupt_pin(pdev->config, 1);
 
-    qemu_log("VGPU REALIZE: enable_display=%d\n", s->enable_display);
     /* Optional display console */
     if (s->enable_display) {
         s->con = graphic_console_init(DEVICE(pdev), 0, &vgpu_gfx_ops, s);
-        qemu_log("VGPU REALIZE: console created=%p\n", s->con);
-        
+
         /* Force initial display update */
         vgpu_display_update(s);
         

@@ -66,11 +66,6 @@ config BOCHS_DISPLAY
     select VGA
     select EDID
 
-config GT730
-    bool
-    default n
-    depends on PCI
-
 config VGPU_CORE
     bool
     default y if PCI_DEVICES
